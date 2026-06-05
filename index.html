@@ -53,6 +53,13 @@ td{padding:6px 7px;text-align:center}th.l,td.l{text-align:left}
 .psum{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin:6px 0 12px}
 .psum .it{background:var(--bg);border-radius:8px;padding:8px 11px}.psum .it .l{font-size:11px;color:var(--muted)}.psum .it .v{font-size:16px;font-weight:700}
 .vsel{margin-bottom:12px}
+.r-fin td{background:#eff6ff}.r-col td{background:#fff7ed}.r-legal td{background:#faf5ff}
+.colhl{background:#eef2ff!important;font-weight:600}
+.cTgt{background:#f1f5f9}.cAct{background:#eff6ff;font-weight:600}.cPct{background:#f0fdf4;font-weight:700}
+.tbox{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;border-radius:14px;padding:16px 20px;display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end;margin:12px 0}
+.tbox .l{font-size:12px;opacity:.85}.tbox .v{font-size:24px;font-weight:700;line-height:1.1}
+.tbox input{background:rgba(255,255,255,.95);border:none;color:#0f172a}
+.upbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#f8fafc;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;margin:10px 0}
 </style></head><body>
 <div class="top"><div class="in">
 <div><h1>ระบบบริหารสถานะหนี้ดี ครบวงจร <span style="opacity:.6;font-weight:400">(Prototype)</span></h1><div class="sub">โหลดข้อมูล → วางแผน → อนุมัติ → อัพเดตผลงาน → ติดตาม → ประเมิน/ปิดจบ</div></div>
@@ -91,11 +98,14 @@ function monthEndGood(b){return b.good-leakT(b)+b.act.rec36+b.act.rec7+b.act.sal
 function monthEndTot(b){return b.total-b.act.cut36-b.act.cut7+b.act.sale-b.act.close;}
 function monthEndPct(b){return monthEndTot(b)>0?clamp(monthEndGood(b)/monthEndTot(b),0,0.99):0;}
 function pT(b){return {total:b.total,good:b.good,goal:b.plan.goal,have02:b.good,t02:collectSum(b),have36:b.mid,t36:rec36(b)+cut36(b),have7:b.lt,t7:rec7(b)+cut7(b),sale:b.plan.sales,rec:recT(b),haveClose:b.plan.matureN,close:b.plan.matureClose};}
-function sumInner(b){var p=pT(b);function it(l,v){return '<div class="it"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>';}return '<div style="font-weight:600;margin:6px 0 2px">สรุปแผนที่วาง (เป้าหมาย)</div><div class="psum">'+it('ลูกหนี้รวม',fmt(p.total))+it('หนี้ดี (0-2)',fmt(p.good))+it('เป้า%หนี้ดี',p.goal+'%')+it('เป้าผลงาน 0-2',fmt(p.t02)+' / '+fmt(p.have02))+it('เป้าผลงาน 3-6',fmt(p.t36)+' / '+fmt(p.have36))+it('เป้าผลงาน 7+',fmt(p.t7)+' / '+fmt(p.have7))+it('เป้าขายใหม่',fmt(p.sale))+it('เป้าดึงกลับเป็นหนี้ดี',fmt(p.rec))+it('เป้าปิดบัญชี (ครบกำหนด)',fmt(p.close)+' / '+fmt(p.haveClose))+'</div>';}
+function sumInner(b){var p=pT(b);function it(l,v){return '<div class="it"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>';}return '<div style="font-weight:600;margin:6px 0 2px">สรุปแผนที่วาง (เป้าหมาย)</div><div class="psum">'+it('ลูกหนี้รวม',fmt(p.total))+it('หนี้ดี (0-2)',fmt(p.good))+it('เป้า%หนี้ดี',p.goal+'%')+it('เป้าผลงาน 0-2',fmt(p.t02)+' / '+fmt(p.have02)+' ('+pct(p.have02?p.t02/p.have02:0)+')')+it('เป้าผลงาน 3-6',fmt(p.t36)+' / '+fmt(p.have36)+' ('+pct(p.have36?p.t36/p.have36:0)+')')+it('เป้าผลงาน 7+',fmt(p.t7)+' / '+fmt(p.have7)+' ('+pct(p.have7?p.t7/p.have7:0)+')')+it('เป้าขายใหม่',fmt(p.sale))+it('เป้าดึงกลับเป็นหนี้ดี',fmt(p.rec))+it('เป้าปิดบัญชี (ครบกำหนด)',fmt(p.close)+' / '+fmt(p.haveClose)+' ('+pct(p.haveClose?p.close/p.haveClose:0)+')')+'</div>';}
 var fmt=function(n){return Math.round(n).toLocaleString('th-TH');};
 var pct=function(x){return (x*100).toFixed(2)+'%';};
 var TYPE_TH={used:'รถมือสอง',new:'รถใหม่'};
 var GRAND_T=DATA.reduce(function(s,b){return s+b.total;},0), GRAND_G=DATA.reduce(function(s,b){return s+b.good;},0);
+function importCSV(text){var lines=text.split(/\r?\n/).filter(function(l){return l.trim();});lines.shift();var n=0;var gk=['g0','g1','g2','g3','g4','g5','g6','g7'];
+  lines.forEach(function(l){var c=l.split(',');var code=(c[0]||'').trim();var b=DATA.find(function(x){return brCode(x.name)===code;});if(!b)return;for(var i=0;i<8;i++){var v=parseInt(c[4+i]);if(!isNaN(v))b[gk[i]]=v;}b.good=b.g0+b.g1+b.g2;b.mid=b.g3+b.g4+b.g5+b.g6;b.lt=b.g7;b.total=b.good+b.mid+b.lt;b.goodPct=b.total>0?b.good/b.total:0;b.workTotal=b.good;recalc(b);n++;});
+  GRAND_T=DATA.reduce(function(s,b){return s+b.total;},0);GRAND_G=DATA.reduce(function(s,b){return s+b.good;},0);return n;}
 
 var STEP=1, role='gm', loaded=false;
 var STEPS=['โหลดข้อมูล','วางแผน','อนุมัติแผน','อัพเดตผลงาน','ติดตามผล','ประเมิน/ปิดจบ'];
@@ -128,7 +138,7 @@ function step1(){
     '<div class="kpi"><div class="l">ลูกหนี้รวม</div><div class="v">'+fmt(GRAND_T)+'</div></div>'+
     '<div class="kpi"><div class="l">%หนี้ดีเริ่มต้น</div><div class="v" style="color:var(--fin)">'+pct(GRAND_G/GRAND_T)+'</div></div>'+
     '<div class="kpi"><div class="l">เขต</div><div class="v">3</div></div></div>'+
-    (loaded?'<div class="banner good"><b>นำเข้าข้อมูลเรียบร้อย</b> — พร้อมให้สาขาวางแผนในขั้นถัดไป</div>':'<button class="btn" id="loadBtn">นำเข้าข้อมูล 37 สาขา</button>')+
+    '<div class="upbar"><b>นำเข้าข้อมูล:</b> <input type="file" id="csvFile" accept=".csv"> <span class="muted">ไฟล์ CSV ตามเทมเพลต (คอลัมน์: code, name, zone, type, g0…g7)</span> <button class="btn gh" id="loadBtn">ใช้ข้อมูลตัวอย่าง</button> <b id="impMsg" style="color:var(--good)"></b></div>'+    (loaded?'<div class="banner good"><b>นำเข้าข้อมูลเรียบร้อย</b> — พร้อมให้สาขาวางแผนในขั้นถัดไป</div>':'')+
     '<div class="dwrap" style="margin-top:12px"><table><thead><tr><th class="l">สาขา</th><th>ลูกหนี้รวม</th><th>หนี้ดี (0-2)</th><th>%หนี้ดี</th><th>เร่งรัด (3-6)</th><th>นิติกรรม (7+)</th></tr></thead><tbody>'+groupRows(rowFn,subFn)+'</tbody></table></div></div>';
 }
 function leakT(b){return Math.max(0,b.g2-(b.plan.collect.g2||0));}
@@ -156,7 +166,7 @@ function us2(){var b=DATA[curBranch];
   var mc=document.getElementById('m_matC');if(mc)b.plan.matureClose=clamp(parseInt(mc.value)||0,0,b.plan.matureN);
   var g=document.getElementById('m_goal');if(g)b.plan.goal=parseInt(g.value)||0;
   setT('d_plan',pct(planPct(b)));setT('d_good',fmt(planGood(b)));setT('d_tot',fmt(planTot(b)));
-  setT('d_status',planPct(b)*100>=b.plan.goal?'<span style="color:var(--good)">ถึงเป้า</span>':'<span style="color:var(--bad)">ยังไม่ถึง</span>');
+  setT('d_status',planPct(b)*100>=b.plan.goal?'<span style="color:#86efac">ถึงเป้า</span>':'<span style="color:#fca5a5">ยังไม่ถึง</span>');
   setT('d_kpi',kpiText(b));setT('d_mature',matureText(b));
   setT('sub_fin',grpText('การเงิน งวด 0-2 (หนี้ดี)',b.good,planGood(b),b.total,planTot(b)));
   setT('sub_col',grpText('เร่งรัด/ยึดรถ งวด 3-6',b.mid,g36new(b),b.total,planTot(b)));
@@ -170,19 +180,19 @@ function step2(){
   var trows=P.map(function(p){var k=p[0],cur=b[k],fin=p[2]==='fin';
     var i1=fin?'<input type="number" id="c_'+k+'" value="'+(b.plan.collect[k]||0)+'" style="width:72px;text-align:right">':'<input type="number" id="r_'+k+'" value="'+(b.plan.rec[k]||0)+'" style="width:64px;text-align:right">';
     var i2=fin?'<span class="muted">-</span>':'<input type="number" id="cut_'+k+'" value="'+(b.plan.cut[k]||0)+'" style="width:64px;text-align:right">';
-    return '<tr><td class="l">'+p[1]+'</td><td>'+fmt(cur)+'</td><td>'+i1+'</td><td>'+i2+'</td></tr>';}).join('');
+    return '<tr class="r-'+p[2]+'"><td class="l">'+p[1]+'</td><td>'+fmt(cur)+'</td><td>'+i1+'</td><td>'+i2+'</td></tr>';}).join('');
   COLS=5;
   var stRow=function(x){var st=x.plan.status,sc=st==='อนุมัติ'?'p-good':st==='รออนุมัติ'?'p-warn':'p-bad';return '<tr'+(x===b?' class="mine"':'')+'><td class="l">'+x.name+(x===b?'<span class="mtag">กำลังแก้</span>':'')+'</td><td>'+pct(x.goodPct)+'</td><td>'+x.plan.goal+'%</td><td><b>'+pct(planPct(x))+'</b></td><td><span class="pill '+sc+'">'+st+'</span></td></tr>';};
   return '<div class="card"><div class="h2">ขั้นที่ 2 · วางแผนการทำงาน (รายสาขา)</div>'+
    '<div class="lead">ตั้งเป้า %หนี้ดี แล้ววางแผนแต่ละงาน: เก็บงวด 0-2 (กันไหลตก 2→3) · ดึงกลับ/ยึด/ฟ้อง รายงวด 3-7 · ขายรถใหม่ · ปิดหนี้ครบกำหนดสัญญา — ระบบคำนวณ %หนี้ดีตามแผนทันที</div>'+
    '<label class="muted">เลือกสาขา</label> <select id="planBr">'+opts+'</select>'+
-   '<div class="banner info" style="display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;align-items:flex-end">'+
-     '<div><div class="muted" style="font-size:12px">เดิม %หนี้ดี</div><div class="big">'+pct(b.goodPct)+'</div></div>'+
-     '<div><div class="muted" style="font-size:12px">เป้าหมาย</div><span style="font-size:18px"><input type="number" id="m_goal" value="'+b.plan.goal+'" style="width:64px;text-align:right"> %</span></div>'+
-     '<div><div class="muted" style="font-size:12px">%หนี้ดีถ้าทำตามแผน</div><div class="big" id="d_plan" style="color:var(--fin)">'+pct(planPct(b))+'</div></div>'+
-     '<div><div class="muted" style="font-size:12px">หนี้ดีใหม่</div><div class="big" id="d_good">'+fmt(planGood(b))+'</div></div>'+
-     '<div><div class="muted" style="font-size:12px">พอร์ตใหม่</div><div class="big" id="d_tot">'+fmt(planTot(b))+'</div></div>'+
-     '<div><div class="muted" style="font-size:12px">สถานะ</div><div id="d_status" style="font-size:18px;font-weight:700">'+(planPct(b)*100>=b.plan.goal?'<span style="color:var(--good)">ถึงเป้า</span>':'<span style="color:var(--bad)">ยังไม่ถึง</span>')+'</div></div>'+
+   '<div class="tbox">'+
+     '<div><div class="l">เดิม %หนี้ดี</div><div class="v">'+pct(b.goodPct)+'</div></div>'+
+     '<div><div class="l">เป้าหมาย</div><div class="v"><input type="number" id="m_goal" value="'+b.plan.goal+'" style="width:58px;text-align:right;font-size:18px"> %</div></div>'+
+     '<div><div class="l">%หนี้ดีถ้าทำตามแผน</div><div class="v" id="d_plan" style="color:#fde68a">'+pct(planPct(b))+'</div></div>'+
+     '<div><div class="l">หนี้ดีใหม่</div><div class="v" id="d_good">'+fmt(planGood(b))+'</div></div>'+
+     '<div><div class="l">พอร์ตใหม่</div><div class="v" id="d_tot">'+fmt(planTot(b))+'</div></div>'+
+     '<div><div class="l">สถานะ</div><div class="v" id="d_status">'+(planPct(b)*100>=b.plan.goal?'<span style="color:#86efac">ถึงเป้า</span>':'<span style="color:#fca5a5">ยังไม่ถึง</span>')+'</div></div>'+
    '</div>'+
    '<div class="grid2" style="margin-bottom:10px"><div class="kpi"><div class="l">ขายรถใหม่เข้ามา (ราย)</div><input type="number" id="m_sale" value="'+b.plan.sales+'" style="width:100%"></div>'+
      '<div class="kpi"><div class="l">หนี้ครบกำหนดสัญญาเดือนนี้ (ราย)</div><input type="number" id="m_matN" value="'+b.plan.matureN+'" style="width:100%"></div>'+
@@ -198,19 +208,19 @@ function step2(){
 }
 
 function step3(){
-  COLS=10; var isGM=(role==='gm');
+  COLS=11; var isGM=(role==='gm');
   var rowFn=function(b){var p=pT(b);var st=b.plan.status,sc=st==='อนุมัติ'?'p-good':st==='รออนุมัติ'?'p-warn':'p-bad';
     var btn=isGM&&st==='รออนุมัติ'?'<button class="btn gr" data-appr="'+DATA.indexOf(b)+'" style="padding:4px 11px;font-size:12px">อนุมัติ</button>':(st==='อนุมัติ'?'<span class="pill p-good">อนุมัติแล้ว</span>':'<span class="muted">-</span>');
-    return '<tr><td class="l">'+b.name+'</td><td><b>'+p.goal+'%</b></td><td>'+fmt(p.t02)+'</td><td>'+fmt(p.t36)+'</td><td>'+fmt(p.t7)+'</td><td>'+fmt(p.sale)+'</td><td>'+fmt(p.rec)+'</td><td>'+fmt(p.close)+'</td><td><span class="pill '+sc+'">'+st+'</span></td><td>'+btn+'</td></tr>';};
-  var subFn=function(list,lab,cls){var s={t02:0,t36:0,t7:0,sale:0,rec:0,close:0};list.forEach(function(b){var p=pT(b);s.t02+=p.t02;s.t36+=p.t36;s.t7+=p.t7;s.sale+=p.sale;s.rec+=p.rec;s.close+=p.close;});var ag=list.reduce(function(x,b){return x+b.plan.goal;},0)/list.length;
-    return '<tr class="'+cls+'"><td class="l">'+lab+'</td><td>'+ag.toFixed(0)+'%</td><td>'+fmt(s.t02)+'</td><td>'+fmt(s.t36)+'</td><td>'+fmt(s.t7)+'</td><td>'+fmt(s.sale)+'</td><td>'+fmt(s.rec)+'</td><td>'+fmt(s.close)+'</td><td></td><td></td></tr>';};
+    return '<tr><td class="l">'+b.name+'</td><td>'+pct(b.goodPct)+'</td><td><b>'+p.goal+'%</b></td><td>'+pct(p.have02?p.t02/p.have02:0)+'</td><td>'+fmt(p.t36)+'/'+fmt(p.have36)+'</td><td>'+fmt(p.t7)+'/'+fmt(p.have7)+'</td><td>'+fmt(p.sale)+'</td><td>'+fmt(p.rec)+'</td><td>'+fmt(p.close)+'/'+fmt(p.haveClose)+'</td><td><span class="pill '+sc+'">'+st+'</span></td><td>'+btn+'</td></tr>';};
+  var subFn=function(list,lab,cls){var s={good:0,total:0,t02:0,h02:0,t36:0,h36:0,t7:0,h7:0,sale:0,rec:0,close:0,hcl:0};list.forEach(function(b){var p=pT(b);s.good+=b.good;s.total+=b.total;s.t02+=p.t02;s.h02+=p.have02;s.t36+=p.t36;s.h36+=p.have36;s.t7+=p.t7;s.h7+=p.have7;s.sale+=p.sale;s.rec+=p.rec;s.close+=p.close;s.hcl+=p.haveClose;});var ag=list.reduce(function(x,b){return x+b.plan.goal;},0)/list.length;
+    return '<tr class="'+cls+'"><td class="l">'+lab+'</td><td>'+pct(s.good/s.total)+'</td><td>'+ag.toFixed(0)+'%</td><td>'+pct(s.h02?s.t02/s.h02:0)+'</td><td>'+fmt(s.t36)+'/'+fmt(s.h36)+'</td><td>'+fmt(s.t7)+'/'+fmt(s.h7)+'</td><td>'+fmt(s.sale)+'</td><td>'+fmt(s.rec)+'</td><td>'+fmt(s.close)+'/'+fmt(s.hcl)+'</td><td></td><td></td></tr>';};
   return '<div class="card"><div class="h2">ขั้นที่ 3 · อนุมัติแผน (ผู้จัดการฝ่าย / GM)</div>'+
     '<div class="lead">ผู้บริหารดูเป้าการทำงานที่แต่ละสาขาวางไว้ สรุปรวมรายเขตและภาพรวม เพื่อพิจารณาอนุมัติ</div>'+
     (isGM?'':'<div class="notice">เฉพาะ ผจก./GM อนุมัติได้ — สลับมุมมองเป็น GM ด้านบน</div>')+
     '<div class="kpis"><div class="kpi"><div class="l">ส่งแผนแล้ว</div><div class="v">'+submittedCount()+' / 37</div></div>'+
     '<div class="kpi"><div class="l">อนุมัติแล้ว</div><div class="v" style="color:var(--good)">'+approvedCount()+' / 37</div></div></div>'+
     (isGM?'<button class="btn gr" id="apprAll" style="margin-bottom:12px">อนุมัติทั้งหมดที่รออนุมัติ</button>':'')+
-    '<div class="dwrap"><table><thead><tr><th class="l">สาขา</th><th>เป้า%</th><th>เป้า0-2</th><th>เป้า3-6</th><th>เป้า7+</th><th>เป้าขาย</th><th>ดึงกลับ</th><th>ปิดบัญชี</th><th>สถานะ</th><th>อนุมัติ</th></tr></thead><tbody>'+groupRows(rowFn,subFn)+'</tbody></table></div></div>';
+    '<div class="dwrap"><table><thead><tr><th class="l">สาขา</th><th>%หนี้ดีเดิม</th><th>เป้า%</th><th>เป้า 0-2</th><th>เป้า 3-6<br>(ทำ/รวม)</th><th>เป้า 7+<br>(ทำ/รวม)</th><th>ขาย</th><th>ดึงกลับ</th><th>ปิดบัญชี<br>(ทำ/รวม)</th><th>สถานะ</th><th>อนุมัติ</th></tr></thead><tbody>'+groupRows(rowFn,subFn)+'</tbody></table></div></div>';
 }
 
 
@@ -238,66 +248,67 @@ function t4daily(){
   var up={},dn={};srt.slice(0,3).forEach(function(b){up[b.name]=1;});srt.slice(-3).forEach(function(b){dn[b.name]=1;});
   var chip=function(b){var c=up[b.name]?'chip up':dn[b.name]?'chip dn':'chip';return '<span class="'+c+'">'+pct(b.collPct)+'</span>';};
   COLS=4+NDAYS;
-  var rowFn=function(b){var mine=(role==='branch'&&b===DATA[curBranch]);return '<tr'+(mine?' class="mine"':'')+'><td class="l">'+b.name+(mine?'<span class="mtag">สาขาคุณ</span>':'')+'</td><td>'+fmt(b.workTotal)+'</td><td>'+fmt(b.cumColl)+'</td><td>'+chip(b)+'</td>'+dcells(b)+'</tr>';};
-  var subFn=function(list,lab,cls){var tg=list.reduce(function(s,b){return s+b.workTotal;},0),cu=list.reduce(function(s,b){return s+b.cumColl;},0);var dd='';for(var i=0;i<NDAYS;i++){var s=list.reduce(function(a,b){return a+b.days[i];},0);dd+='<td>'+fmt(s)+'</td>';}return '<tr class="'+cls+'"><td class="l">'+lab+'</td><td>'+fmt(tg)+'</td><td>'+fmt(cu)+'</td><td><span class="chip ci">'+pct(cu/tg)+'</span></td>'+dd+'</tr>';};
-  var heads='<th class="l">สาขา</th><th>เป้า</th><th>ทำได้</th><th>%ปัจจุบัน</th>';for(var i=1;i<=NDAYS;i++)heads+='<th>วันที่ '+i+'</th>';
+  var rowFn=function(b){var mine=(role==='branch'&&b===DATA[curBranch]);return '<tr'+(mine?' class="mine"':'')+'><td class="l">'+b.name+(mine?'<span class="mtag">สาขาคุณ</span>':'')+'</td><td>'+fmt(b.workTotal)+'</td><td>'+fmt(b.cumColl)+'</td><td class="colhl">'+chip(b)+'</td>'+dcells(b)+'</tr>';};
+  var subFn=function(list,lab,cls){var tg=list.reduce(function(s,b){return s+b.workTotal;},0),cu=list.reduce(function(s,b){return s+b.cumColl;},0);var dd='';for(var i=0;i<NDAYS;i++){var s=list.reduce(function(a,b){return a+b.days[i];},0);dd+='<td>'+fmt(s)+'</td>';}return '<tr class="'+cls+'"><td class="l">'+lab+'</td><td>'+fmt(tg)+'</td><td>'+fmt(cu)+'</td><td class="colhl"><span class="chip ci">'+pct(cu/tg)+'</span></td>'+dd+'</tr>';};
+  var heads='<th class="l">สาขา</th><th>เป้า</th><th>ทำได้</th><th class="colhl">%ปัจจุบัน</th>';for(var i=1;i<=NDAYS;i++)heads+='<th>วันที่ '+i+'</th>';
   var entry='';
-  if(role==='branch'){var b=DATA[curBranch];entry='<div class="banner info" style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between"><div><div class="muted" style="font-size:12px">บันทึกผลเก็บวันนี้ · ศุกร์ 5 มิ.ย. 2569</div><div style="font-size:16px;font-weight:600">'+b.name+' · เขต '+b.zone+'</div></div><div style="display:flex;gap:8px;align-items:flex-end"><div><div class="muted" style="font-size:12px">กรอกผลล่าสุด</div><input type="number" id="todayIn" value="'+b.days[NDAYS-1]+'" style="width:90px;text-align:right"></div><button class="btn" id="updBtn">อัพเดต</button></div></div>';}
+  if(role==='branch'){var b=DATA[curBranch];entry='<div class="tbox" style="background:linear-gradient(135deg,#b45309,#f59e0b)"><div><div class="l">บันทึกผลเก็บวันนี้ · ศุกร์ 5 มิ.ย. 2569</div><div class="v" style="font-size:18px">'+b.name+' · เขต '+b.zone+'</div></div><div><div class="l">กรอกผลล่าสุด (ราย)</div><div class="v"><input type="number" id="todayIn" value="'+b.days[NDAYS-1]+'" style="width:96px;text-align:right;font-size:22px"></div></div><div><button class="btn" id="updBtn" style="background:#fff;color:#b45309;font-size:17px;padding:14px 30px">อัพเดต</button></div><div style="margin-left:auto;text-align:right"><div class="l">สะสม / เป้า</div><div class="v">'+fmt(b.cumColl)+' / '+fmt(b.workTotal)+' = '+pct(b.collPct)+'</div></div></div>';}
   var body=(role==='gm')?groupRows(rowFn,subFn):(function(){var z=role==='branch'?DATA[curBranch].zone:parseInt(role.replace('z',''));var h='';['used','new'].forEach(function(tp){var list=DATA.filter(function(b){return b.zone===z&&b.type===tp;}).sort(function(a,b){return parseInt(brCode(a.name))-parseInt(brCode(b.name));});if(!list.length)return;h+='<tr class="gband '+tp+'"><td colspan="'+COLS+'">'+TYPE_TH[tp]+' · เขต '+z+'</td></tr>';list.forEach(function(b){h+=rowFn(b);});h+=subFn(list,'รวม'+TYPE_TH[tp]+' เขต '+z,'sub-t');});h+=subFn(DATA.filter(function(b){return b.zone===z;}),'รวมเขต '+z,'zone-t');return h;})();
   return entry+'<div class="dwrap"><table><thead><tr>'+heads+'</tr></thead><tbody>'+body+'</tbody></table></div>';
 }
 function t4late(mode){
   COLS=7; var is36=mode==='36';
-  var have=function(b){return is36?b.mid:b.lt;}, pr=function(b){return is36?rec36(b):rec7(b);}, pc=function(b){return is36?cut36(b):cut7(b);};
-  var rid=function(i){return (is36?'a36r_':'a7r_')+i;}, cid=function(i){return (is36?'a36c_':'a7c_')+i;};
-  var rowFn=function(b){var i=DATA.indexOf(b);var ar=is36?b.act.rec36:b.act.rec7, ac=is36?b.act.cut36:b.act.cut7;
-    return '<tr><td class="l">'+b.name+'</td><td>'+fmt(have(b))+'</td><td>'+fmt(pr(b))+'</td><td><input type="number" id="'+rid(i)+'" value="'+ar+'" style="width:62px;text-align:right"></td><td>'+fmt(pc(b))+'</td><td><input type="number" id="'+cid(i)+'" value="'+ac+'" style="width:62px;text-align:right"></td><td><b>'+pct((pr(b)+pc(b))>0?(ar+ac)/(pr(b)+pc(b)):0)+'</b></td></tr>';};
-  var subFn=function(list,lab,cls){var hv=list.reduce(function(s,b){return s+have(b);},0),tr=list.reduce(function(s,b){return s+pr(b);},0),tc=list.reduce(function(s,b){return s+pc(b);},0),aar=list.reduce(function(s,b){return s+(is36?b.act.rec36:b.act.rec7);},0),aac=list.reduce(function(s,b){return s+(is36?b.act.cut36:b.act.cut7);},0);return '<tr class="'+cls+'"><td class="l">'+lab+'</td><td>'+fmt(hv)+'</td><td>'+fmt(tr)+'</td><td><b>'+fmt(aar)+'</b></td><td>'+fmt(tc)+'</td><td><b>'+fmt(aac)+'</b></td><td><b>'+pct((tr+tc)>0?(aar+aac)/(tr+tc):0)+'</b></td></tr>';};
-  var h1=is36?'ดึงกลับเป็นหนี้ดี':'ดึงกลับ (ถ้าได้)', h2=is36?'ยึดรถ/ตัดออก':'ฟ้อง/ดำเนินคดี';
-  return '<div class="notice">บันทึกผลงานจริง'+(is36?'เร่งรัด/ยึดรถ งวด 3-6':'นิติกรรม/ฟ้อง งวด 7+')+' — กรอก "ทำได้" เทียบเป้าที่วางไว้</div>'+
-    '<div class="dwrap"><table><thead><tr><th class="l">สาขา</th><th>'+(is36?'งวด3-6':'งวด7+')+'ที่มี</th><th>เป้า'+h1+'</th><th>ทำได้</th><th>เป้า'+h2+'</th><th>ทำได้</th><th>%สำเร็จ</th></tr></thead><tbody>'+groupRows(rowFn,subFn)+'</tbody></table></div>';
+  var have=function(b){return is36?b.mid:b.lt;},pr=function(b){return is36?rec36(b):rec7(b);},pc=function(b){return is36?cut36(b):cut7(b);};
+  var rid=function(i){return (is36?'a36r_':'a7r_')+i;},cid=function(i){return (is36?'a36c_':'a7c_')+i;};
+  var rowFn=function(b){var i=DATA.indexOf(b);var ar=is36?b.act.rec36:b.act.rec7,ac=is36?b.act.cut36:b.act.cut7;
+    return '<tr><td class="l">'+b.name+'</td><td>'+fmt(have(b))+'</td><td class="cTgt">'+fmt(pr(b))+'</td><td class="cAct"><input type="number" id="'+rid(i)+'" value="'+ar+'" style="width:60px;text-align:right"></td><td class="cTgt">'+fmt(pc(b))+'</td><td class="cAct"><input type="number" id="'+cid(i)+'" value="'+ac+'" style="width:60px;text-align:right"></td><td class="cPct">'+pct((pr(b)+pc(b))>0?(ar+ac)/(pr(b)+pc(b)):0)+'</td></tr>';};
+  var subFn=function(list,lab,cls){var hv=list.reduce(function(s,b){return s+have(b);},0),tr=list.reduce(function(s,b){return s+pr(b);},0),tc=list.reduce(function(s,b){return s+pc(b);},0),aar=list.reduce(function(s,b){return s+(is36?b.act.rec36:b.act.rec7);},0),aac=list.reduce(function(s,b){return s+(is36?b.act.cut36:b.act.cut7);},0);return '<tr class="'+cls+'"><td class="l">'+lab+'</td><td>'+fmt(hv)+'</td><td class="cTgt">'+fmt(tr)+'</td><td class="cAct">'+fmt(aar)+'</td><td class="cTgt">'+fmt(tc)+'</td><td class="cAct">'+fmt(aac)+'</td><td class="cPct">'+pct((tr+tc)>0?(aar+aac)/(tr+tc):0)+'</td></tr>';};
+  var h1=is36?'ดึงกลับเป็นหนี้ดี':'ดึงกลับ (ถ้าได้)',h2=is36?'ยึดรถ/ตัดออก':'ฟ้อง/ดำเนินคดี';
+  return '<div class="notice">บันทึกผลงานจริง'+(is36?' เร่งรัด/ยึดรถ งวด 3-6':' นิติกรรม/ฟ้อง งวด 7+')+' — ฟ้าอ่อน=เป้า · ฟ้าเข้ม=ทำได้ · เขียว=%สำเร็จ</div>'+
+    '<div class="dwrap"><table><thead><tr><th class="l">สาขา</th><th>'+(is36?'งวด3-6':'งวด7+')+'ที่มี</th><th class="cTgt">เป้า'+h1+'</th><th class="cAct">ทำได้</th><th class="cTgt">เป้า'+h2+'</th><th class="cAct">ทำได้</th><th class="cPct">%สำเร็จ</th></tr></thead><tbody>'+groupRows(rowFn,subFn)+'</tbody></table></div>';
 }
 function t4other(){
   COLS=6;
-  var rowFn=function(b){var i=DATA.indexOf(b);return '<tr><td class="l">'+b.name+'</td><td>'+fmt(b.plan.sales)+'</td><td><input type="number" id="as_'+i+'" value="'+b.act.sale+'" style="width:64px;text-align:right"></td><td>'+fmt(b.plan.matureClose)+'</td><td><input type="number" id="ac_'+i+'" value="'+b.act.close+'" style="width:64px;text-align:right"></td><td><b>'+pct((b.plan.sales+b.plan.matureClose)>0?(b.act.sale+b.act.close)/(b.plan.sales+b.plan.matureClose):0)+'</b></td></tr>';};
-  var subFn=function(list,lab,cls){var ts=list.reduce(function(s,b){return s+b.plan.sales;},0),as=list.reduce(function(s,b){return s+b.act.sale;},0),tc=list.reduce(function(s,b){return s+b.plan.matureClose;},0),ac=list.reduce(function(s,b){return s+b.act.close;},0);return '<tr class="'+cls+'"><td class="l">'+lab+'</td><td>'+fmt(ts)+'</td><td><b>'+fmt(as)+'</b></td><td>'+fmt(tc)+'</td><td><b>'+fmt(ac)+'</b></td><td><b>'+pct((ts+tc)>0?(as+ac)/(ts+tc):0)+'</b></td></tr>';};
-  return '<div class="notice">บันทึกยอดขายรถใหม่ที่เข้ามาจริง และจำนวนปิดบัญชีหนี้ครบกำหนดได้จริง</div>'+
-    '<div class="dwrap"><table><thead><tr><th class="l">สาขา</th><th>เป้าขายใหม่</th><th>ขายได้จริง</th><th>เป้าปิดบัญชี</th><th>ปิดได้จริง</th><th>%สำเร็จ</th></tr></thead><tbody>'+groupRows(rowFn,subFn)+'</tbody></table></div>';
+  var rowFn=function(b){var i=DATA.indexOf(b);return '<tr><td class="l">'+b.name+'</td><td class="cTgt">'+fmt(b.plan.sales)+'</td><td class="cAct"><input type="number" id="as_'+i+'" value="'+b.act.sale+'" style="width:62px;text-align:right"></td><td class="cTgt">'+fmt(b.plan.matureClose)+'</td><td class="cAct"><input type="number" id="ac_'+i+'" value="'+b.act.close+'" style="width:62px;text-align:right"></td><td class="cPct">'+pct((b.plan.sales+b.plan.matureClose)>0?(b.act.sale+b.act.close)/(b.plan.sales+b.plan.matureClose):0)+'</td></tr>';};
+  var subFn=function(list,lab,cls){var ts=list.reduce(function(s,b){return s+b.plan.sales;},0),as=list.reduce(function(s,b){return s+b.act.sale;},0),tc=list.reduce(function(s,b){return s+b.plan.matureClose;},0),ac=list.reduce(function(s,b){return s+b.act.close;},0);return '<tr class="'+cls+'"><td class="l">'+lab+'</td><td class="cTgt">'+fmt(ts)+'</td><td class="cAct">'+fmt(as)+'</td><td class="cTgt">'+fmt(tc)+'</td><td class="cAct">'+fmt(ac)+'</td><td class="cPct">'+pct((ts+tc)>0?(as+ac)/(ts+tc):0)+'</td></tr>';};
+  return '<div class="notice">บันทึกยอดขายรถใหม่จริง และจำนวนปิดบัญชีครบกำหนดได้จริง — ฟ้าอ่อน=เป้า · ฟ้าเข้ม=ทำได้ · เขียว=%สำเร็จ</div>'+
+    '<div class="dwrap"><table><thead><tr><th class="l">สาขา</th><th class="cTgt">เป้าขายใหม่</th><th class="cAct">ขายได้จริง</th><th class="cTgt">เป้าปิดบัญชี</th><th class="cAct">ปิดได้จริง</th><th class="cPct">%สำเร็จ</th></tr></thead><tbody>'+groupRows(rowFn,subFn)+'</tbody></table></div>';
 }
+function cellset(list){var a={c:0,r36:0,c36:0,r7:0,c7:0,s:0,cl:0},t={c:0,r36:0,c36:0,r7:0,c7:0,s:0,cl:0},gAvg=0,gOld=0,tot=0;
+  list.forEach(function(b){a.c+=b.act.col;t.c+=collectSum(b);a.r36+=b.act.rec36;a.c36+=b.act.cut36;t.r36+=rec36(b);t.c36+=cut36(b);a.r7+=b.act.rec7;a.c7+=b.act.cut7;t.r7+=rec7(b);t.c7+=cut7(b);a.s+=b.act.sale;t.s+=b.plan.sales;a.cl+=b.act.close;t.cl+=b.plan.matureClose;gAvg+=b.plan.goal;gOld+=b.good;tot+=b.total;});
+  var aw=a.c+a.r36+a.c36+a.r7+a.c7+a.s+a.cl,tw=t.c+t.r36+t.c36+t.r7+t.c7+t.s+t.cl;
+  return {oldp:tot>0?gOld/tot:0,goal:(gAvg/list.length).toFixed(0),c02:t.c>0?a.c/t.c:0,c:[a.c,t.c],w36:[a.r36+a.c36,t.r36+t.c36],w7:[a.r7+a.c7,t.r7+t.c7],s:[a.s,t.s],cl:[a.cl,t.cl],prog:tw>0?aw/tw:0};}
 function step5(){
   var views=[['branch','รายสาขา'],['zone','สรุปรายเขต'],['type','สรุปแยกประเภทรถ'],['all','ภาพรวมทั้งหมด']];
   var sel='<div class="vsel">มุมมอง: <select id="s5sel">'+views.map(function(v){return '<option value="'+v[0]+'"'+(step5view===v[0]?' selected':'')+'>'+v[1]+'</option>';}).join('')+'</select></div>';
-  var heads='<th class="l">รายการ</th><th>เป้า%หนี้ดี</th><th>งาน 0-2</th><th>งาน 3-6</th><th>งาน 7+</th><th>ขาย</th><th>ปิดบัญชี</th><th>%งานสำเร็จ</th>';
-  var cellset=function(list){var a={c:0,r36:0,c36:0,r7:0,c7:0,s:0,cl:0},t={c:0,r36:0,c36:0,r7:0,c7:0,s:0,cl:0},gAvg=0;
-    list.forEach(function(b){a.c+=b.act.col;t.c+=collectSum(b);a.r36+=b.act.rec36;a.c36+=b.act.cut36;t.r36+=rec36(b);t.c36+=cut36(b);a.r7+=b.act.rec7;a.c7+=b.act.cut7;t.r7+=rec7(b);t.c7+=cut7(b);a.s+=b.act.sale;t.s+=b.plan.sales;a.cl+=b.act.close;t.cl+=b.plan.matureClose;gAvg+=b.plan.goal;});
-    var aw=a.c+a.r36+a.c36+a.r7+a.c7+a.s+a.cl, tw=t.c+t.r36+t.c36+t.r7+t.c7+t.s+t.cl;
-    return {goal:(gAvg/list.length).toFixed(0),c:[a.c,t.c],w36:[a.r36+a.c36,t.r36+t.c36],w7:[a.r7+a.c7,t.r7+t.c7],s:[a.s,t.s],cl:[a.cl,t.cl],prog:tw>0?aw/tw:0};};
+  var heads='<th class="l">รายการ</th><th>%หนี้ดีเดิม</th><th>เป้า%หนี้ดี</th><th>งาน 0-2 (%)</th><th>งาน 3-6</th><th>งาน 7+</th><th>ขาย</th><th>ปิดบัญชี</th><th>%งานสำเร็จ</th>';
   var rowHTML=function(lab,list,cls){var x=cellset(list);var pc=x.prog>=1?'var(--good)':x.prog>=0.6?'var(--warn)':'var(--bad)';
-    return '<tr'+(cls?' class="'+cls+'"':'')+'><td class="l">'+lab+'</td><td>'+x.goal+'%</td><td>'+ratioCell(x.c[0],x.c[1])+'</td><td>'+ratioCell(x.w36[0],x.w36[1])+'</td><td>'+ratioCell(x.w7[0],x.w7[1])+'</td><td>'+ratioCell(x.s[0],x.s[1])+'</td><td>'+ratioCell(x.cl[0],x.cl[1])+'</td><td><b style="color:'+pc+'">'+pct(x.prog)+'</b></td></tr>';};
+    return '<tr'+(cls?' class="'+cls+'"':'')+'><td class="l">'+lab+'</td><td>'+pct(x.oldp)+'</td><td>'+x.goal+'%</td><td><b style="color:'+(x.c02>=0.95?'var(--good)':x.c02>=0.6?'var(--warn)':'var(--bad)')+'">'+pct(x.c02)+'</b></td><td>'+ratioCell(x.w36[0],x.w36[1])+'</td><td>'+ratioCell(x.w7[0],x.w7[1])+'</td><td>'+ratioCell(x.s[0],x.s[1])+'</td><td>'+ratioCell(x.cl[0],x.cl[1])+'</td><td><b style="color:'+pc+'">'+pct(x.prog)+'</b></td></tr>';};
   var body='';
-  if(step5view==='branch'){COLS=8;
-    body=groupRows(function(b){return rowHTML(b.name,[b]);},function(list,lab,cls){return rowHTML(lab,list,cls);});}
+  if(step5view==='branch'){COLS=9;body=groupRows(function(b){return rowHTML(b.name,[b]);},function(list,lab,cls){return rowHTML(lab,list,cls);});}
   else if(step5view==='zone'){[1,2,3].forEach(function(z){body+=rowHTML('เขต '+z,DATA.filter(function(b){return b.zone===z;}),'zone-t');});body+=rowHTML('ภาพรวมทั้งหมด',DATA,'grand');}
   else if(step5view==='type'){body+=rowHTML('รถใหม่ (21 สาขา)',DATA.filter(function(b){return b.type==='new';}),'zone-t');body+=rowHTML('รถมือสอง (16 สาขา)',DATA.filter(function(b){return b.type==='used';}),'zone-t');body+=rowHTML('ภาพรวมทั้งหมด',DATA,'grand');}
   else{body+=rowHTML('ภาพรวมทั้งหมด 37 สาขา',DATA,'grand');[1,2,3].forEach(function(z){body+=rowHTML('— เขต '+z,DATA.filter(function(b){return b.zone===z;}));});}
   return '<div class="card"><div class="h2">ขั้นที่ 5 · ติดตามผล (เทียบเป้าที่วางไว้)</div>'+
-    '<div class="lead">ดูผลงานจริงเทียบเป้าทุกด้าน เลือกดูรายสาขา / รายเขต / แยกประเภทรถ / ภาพรวม เพื่อเปรียบเทียบ</div>'+sel+
+    '<div class="lead">ผลงานจริงเทียบเป้าทุกด้าน เลือกดูรายสาขา / รายเขต / แยกประเภทรถ / ภาพรวม</div>'+sel+
     '<div class="dwrap"><table><thead><tr>'+heads+'</tr></thead><tbody>'+body+'</tbody></table></div></div>';
 }
 function step6(){
-  COLS=6; var pass=0; DATA.forEach(function(b){if(monthEndPct(b)*100>=b.plan.goal)pass++;});
-  var rowFn=function(b){var me=monthEndPct(b),ok=me*100>=b.plan.goal,pr=prog(b);
-    return '<tr><td class="l">'+b.name+'</td><td>'+pct(b.goodPct)+'</td><td>'+b.plan.goal+'%</td><td><b style="color:'+(ok?'var(--good)':'var(--bad)')+'">'+pct(me)+'</b></td><td>'+pct(pr)+'</td><td>'+(ok?'<span class="pill p-good">ผ่านเป้า</span>':'<span class="pill p-bad">ไม่ถึงเป้า</span>')+'</td></tr>';};
-  var subFn=function(list,lab,cls){var t=list.reduce(function(s,b){return s+b.total;},0),meG=list.reduce(function(s,b){return s+monthEndPct(b)*b.total;},0),p=list.filter(function(b){return monthEndPct(b)*100>=b.plan.goal;}).length,pg=list.reduce(function(s,b){return s+prog(b);},0)/list.length;return '<tr class="'+cls+'"><td class="l">'+lab+'</td><td></td><td></td><td><b>'+pct(meG/t)+'</b></td><td>'+pct(pg)+'</td><td>ผ่าน '+p+'/'+list.length+'</td></tr>';};
+  COLS=11; var pass=0; DATA.forEach(function(b){if(monthEndPct(b)*100>=b.plan.goal)pass++;});
+  var rowFn=function(b){var x=cellset([b]);var me=monthEndPct(b),ok=me*100>=b.plan.goal;
+    return '<tr><td class="l">'+b.name+'</td><td>'+pct(b.goodPct)+'</td><td>'+b.plan.goal+'%</td><td><b style="color:'+(ok?'var(--good)':'var(--bad)')+'">'+pct(me)+'</b></td><td>'+pct(x.c02)+'</td><td>'+ratioCell(x.w36[0],x.w36[1])+'</td><td>'+ratioCell(x.w7[0],x.w7[1])+'</td><td>'+ratioCell(x.s[0],x.s[1])+'</td><td>'+ratioCell(x.cl[0],x.cl[1])+'</td><td><b>'+pct(x.prog)+'</b></td><td>'+(ok?'<span class="pill p-good">ผ่านเป้า</span>':'<span class="pill p-bad">ไม่ถึงเป้า</span>')+'</td></tr>';};
+  var subFn=function(list,lab,cls){var x=cellset(list);var t=list.reduce(function(s,b){return s+b.total;},0),meG=list.reduce(function(s,b){return s+monthEndPct(b)*b.total;},0),p=list.filter(function(b){return monthEndPct(b)*100>=b.plan.goal;}).length;
+    return '<tr class="'+cls+'"><td class="l">'+lab+'</td><td>'+pct(x.oldp)+'</td><td>'+x.goal+'%</td><td><b>'+pct(meG/t)+'</b></td><td>'+pct(x.c02)+'</td><td>'+ratioCell(x.w36[0],x.w36[1])+'</td><td>'+ratioCell(x.w7[0],x.w7[1])+'</td><td>'+ratioCell(x.s[0],x.s[1])+'</td><td>'+ratioCell(x.cl[0],x.cl[1])+'</td><td><b>'+pct(x.prog)+'</b></td><td>ผ่าน '+p+'/'+list.length+'</td></tr>';};
   return '<div class="card"><div class="h2">ขั้นที่ 6 · ประเมินผล &amp; ปิดจบเดือน</div>'+
-    '<div class="lead">สรุปผลงานจริงทั้งหมดเทียบเป้าที่วางไว้ — %หนี้ดีจริงสิ้นเดือนเทียบเป้า และ%งานสำเร็จรวม ประเมินผ่าน-ไม่ผ่าน</div>'+
+    '<div class="lead">สรุปผลงานจริงทุกด้านเทียบเป้า (เหมือนหน้าติดตาม) พร้อมผลประเมินผ่าน-ไม่ผ่านรายสาขา/เขต</div>'+
     '<div class="kpis"><div class="kpi"><div class="l">สาขาผ่านเป้า</div><div class="v" style="color:var(--good)">'+pass+' / 37</div></div>'+
     '<div class="kpi"><div class="l">อัตราผ่าน</div><div class="v">'+(pass/37*100).toFixed(0)+'%</div></div>'+
     '<div class="kpi"><div class="l">%งานสำเร็จเฉลี่ย</div><div class="v">'+pct(DATA.reduce(function(s,b){return s+prog(b);},0)/37)+'</div></div>'+
     '<div class="kpi"><div class="l">%หนี้ดีรวมสิ้นเดือน</div><div class="v" style="color:var(--fin)">'+pct(DATA.reduce(function(s,b){return s+monthEndPct(b)*b.total;},0)/GRAND_T)+'</div></div></div>'+
-    '<div class="banner good"><b>ปิดจบเดือน</b> — บันทึกผล ประเมินรายสาขา/เขต แล้วนำไปตั้งแผนเดือนถัดไป</div>'+
-    '<div class="dwrap"><table><thead><tr><th class="l">สาขา</th><th>เดิม%</th><th>เป้า%</th><th>ผลจริงสิ้นเดือน</th><th>%งานสำเร็จ</th><th>ประเมิน</th></tr></thead><tbody>'+groupRows(rowFn,subFn)+'</tbody></table></div></div>';
+    '<div class="banner good"><b>ปิดจบเดือน</b> — บันทึกผล ประเมิน แล้วนำไปตั้งแผนเดือนถัดไป</div>'+
+    '<div class="dwrap"><table><thead><tr><th class="l">สาขา</th><th>เดิม%</th><th>เป้า%</th><th>ผลจริง%</th><th>0-2(%)</th><th>3-6</th><th>7+</th><th>ขาย</th><th>ปิดบัญชี</th><th>%สำเร็จ</th><th>ประเมิน</th></tr></thead><tbody>'+groupRows(rowFn,subFn)+'</tbody></table></div></div>';
 }
+
 function renderStepper(){document.getElementById('stepper').innerHTML=STEPS.map(function(s,i){var n=i+1;var cls=n===STEP?'step active':(n<STEP?'step done':'step');return '<div class="'+cls+'" data-step="'+n+'"><div class="n">'+(n<STEP?'✓':n)+'</div><div class="t">'+s+'</div></div>';}).join('');document.querySelectorAll('#stepper .step').forEach(function(el){el.onclick=function(){STEP=parseInt(el.dataset.step);renderAll();};});}
 function navBar(){return '<div class="nav"><button class="btn gh" id="prevBtn"'+(STEP===1?' disabled':'')+'>ย้อนกลับ</button><button class="btn" id="nextBtn"'+(STEP===6?' disabled':'')+'>ขั้นถัดไป →</button></div>';}
 function renderStep(){var fn=[step1,step2,step3,step4,step5,step6][STEP-1];document.getElementById('content').innerHTML=fn()+navBar();wire();}
@@ -306,7 +317,7 @@ function wire(){
   var pv=document.getElementById('prevBtn'),nx=document.getElementById('nextBtn');
   if(pv)pv.onclick=function(){if(STEP>1){STEP--;renderAll();}};
   if(nx)nx.onclick=function(){if(STEP<6){STEP++;renderAll();}};
-  if(STEP===1){var lb=document.getElementById('loadBtn');if(lb)lb.onclick=function(){loaded=true;renderStep();};}
+  if(STEP===1){var lb=document.getElementById('loadBtn');if(lb)lb.onclick=function(){loaded=true;renderStep();};var cf=document.getElementById('csvFile');if(cf)cf.onchange=function(){var f=cf.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var n=importCSV(r.result);loaded=true;renderStep();var m=document.getElementById('impMsg');if(m)m.textContent='นำเข้า '+n+' สาขาสำเร็จ';}catch(e){var m=document.getElementById('impMsg');if(m){m.style.color='var(--bad)';m.textContent='ไฟล์ผิดรูปแบบ';}}};r.readAsText(f);};}
   if(STEP===2){var pb=document.getElementById('planBr');if(pb)pb.onchange=function(){curBranch=parseInt(pb.value);renderStep();};
     ['c_g0','c_g1','c_g2','r_g3','r_g4','r_g5','r_g6','r_g7','cut_g3','cut_g4','cut_g5','cut_g6','cut_g7','m_sale','m_matN','m_matC','m_goal'].forEach(function(id){var e=document.getElementById(id);if(e)e.oninput=us2;});
     var sb=document.getElementById('submitBtn');if(sb)sb.onclick=function(){DATA[curBranch].plan.status='รออนุมัติ';renderStep();};}
@@ -317,7 +328,7 @@ function wire(){
   if(STEP===5){var sv=document.getElementById('s5sel');if(sv)sv.onchange=function(){step5view=sv.value;renderStep();};}
 }
 var roleSel=document.getElementById('roleSel');
-[['gm','ผู้จัดการฝ่าย / GM'],['z1','ซุปการเงิน เขต 1'],['z2','ซุปการเงิน เขต 2'],['z3','ซุปการเงิน เขต 3'],['branch','สาขา (02-ระโนด1)']].forEach(function(r){var o=document.createElement('option');o.value=r[0];o.textContent=r[1];roleSel.appendChild(o);});
+[['gm','ผู้จัดการฝ่าย / GM'],['z1','ซุปการเงิน เขต 1'],['z2','ซุปการเงิน เขต 2'],['z3','ซุปการเงิน เขต 3'],['branch','สาขา (มุมมองรายสาขา)']].forEach(function(r){var o=document.createElement('option');o.value=r[0];o.textContent=r[1];roleSel.appendChild(o);});
 roleSel.onchange=function(){role=roleSel.value;if(role==='branch')curBranch=0;else if(role.indexOf('z')===0)curBranch=DATA.findIndex(function(b){return b.zone===parseInt(role.replace('z',''));});renderAll();};
 renderAll();
 </script></body></html>
